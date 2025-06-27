@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord.app_commands import Choice
 from config import TOKEN
 from events import handle_on_ready, on_member_join
 from commands import (
@@ -20,6 +21,7 @@ async def on_member_join(member):
 
 # Registrar comandos slash
 bot.tree.command(name="ajuda", description="Mostra os comandos do bot")(cmd_ajuda)
+
 
 #COMENTADO PARA QUE O COMMAND CONSIGA LER AS CHOICES DAS CATEGORIAS
 #bot.tree.command(name="montar", description="Cria a estrutura básica do servidor")(cmd_montar)

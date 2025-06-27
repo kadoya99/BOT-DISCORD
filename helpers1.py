@@ -27,13 +27,11 @@ def get_voice_channel_by_name(guild, name):
     return None
 
 
-#CATEGORIAS
 async def get_or_create_category(guild, name):
     categoria = get_category_by_name(guild, name)
     if categoria:
         return categoria
     return await guild.create_category(name)
-
 
 
 def get_role_by_name(guild, name):

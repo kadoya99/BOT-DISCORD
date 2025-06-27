@@ -42,7 +42,7 @@ async def cmd_ajuda(interaction: discord.Interaction):
     embed.add_field(name="/sugerir texto", value="Envia uma sugestão para o canal de ideias", inline=False)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
-#MONTAR 
+
 # /montar
 @app_commands.command(name="montar", description="Cria a estrutura básica do servidor")
 @app_commands.describe(tipo="Tipo de estrutura para montar")
@@ -211,38 +211,6 @@ async def cmd_montar(interaction: discord.Interaction, tipo: Choice[str]):
     await interaction.followup.send(f"Servidor montado no estilo `{tipo.name}` ✅", ephemeral=True)
     log_channel = await get_or_create_log_channel(guild)
     await log_channel.send(f"{interaction.user} executou comando montar com tipo `{tipo.name}`.")
-
-
-# /limpar quantidade
-async def cmd_limpar(interaction: discord.Interaction, quantidade: int):
-    await interaction.response.defer(ephemeral=True)
-
-    if quantidade < 0:
-        await interaction.followup.send("Número inválido. Use 0 para apagar tudo ou um número positivo.", ephemeral=True)
-        return
-    
-    deleted_count = 0
-
-    if quantidade == 0:
-        def check(msg):
-            return True
-        while True:
-            deleted = await interaction.channel.purge(limit=100, check=check)
-            deleted_count += len(deleted)
-            if len(deleted) < 100:
-                break
-    else:
-        deleted = await interaction.channel.purge(limit=quantidade)
-        deleted_count = len(deleted)
-
-    msg = await interaction.channel.send(f"{deleted_count} mensagens apagadas.")
-    await asyncio.sleep(5)
-    await msg.delete()
-
-    await interaction.followup.send("Limpeza concluída.", ephemeral=True)
-
-    log_channel = await get_or_create_log_channel(interaction.guild)
-    await log_channel.send(f"{interaction.user} limpou {deleted_count} mensagens no canal {interaction.channel.name}.")
 
 
 # /criarcargo
