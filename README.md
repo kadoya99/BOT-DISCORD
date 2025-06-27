@@ -1,6 +1,6 @@
 # Automacao-de-Servidor---BOT
 
-Um bot para Discord feito em Python, que automatiza [descrição breve do que seu bot faz].
+Um bot para Discord feito em Python, que automatiza [Cria canais, apaga canais, cria cargos e muito mais].
 
 ## Funcionalidades
 
