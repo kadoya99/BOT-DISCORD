@@ -1,6 +1,7 @@
 import discord
 from discord import app_commands
 from discord.app_commands import Choice
+from server_structures import ESTRUTURAS
 import asyncio
 from helpers import (
     get_category_by_name,
@@ -32,7 +33,7 @@ CORES_NOMEADAS = {
 async def cmd_ajuda(interaction: discord.Interaction):
     embed = discord.Embed(title="📘 Comandos disponíveis", color=discord.Color.green())
     embed.add_field(name="/ajuda", value="Mostra essa lista", inline=False)
-    embed.add_field(name="/montar", value="Cria a estrutura básica do servidor (Administrador)", inline=False)
+    embed.add_field(name="/montar", value="Cria a estrutura básica do servidor (Administrador)", inline=False)  
     embed.add_field(name="/resetar", value="Reseta o servidor mantendo canais escolhidos (Administrador)", inline=False)
     embed.add_field(name="/limpar quantidade", value="Apaga as últimas n mensagens do canal (Gerenciar mensagens)", inline=False)
     embed.add_field(name="/criarcargo nome", value="Cria um cargo novo (Administrador)", inline=False)
@@ -51,166 +52,55 @@ async def cmd_ajuda(interaction: discord.Interaction):
     Choice(name="Estudos", value="estudos"),
     Choice(name="Comunidade", value="comunidade"),
     Choice(name="Filmes", value="filmes"),
+    Choice(name="Música", value="musica"),
+    Choice(name="Tecnologia", value="tecnologia"),
+    Choice(name="Arte", value="arte"),
+    Choice(name="Literatura", value="literatura"),
+    Choice(name="Cinema", value="cinema"),
 ])
 async def cmd_montar(interaction: discord.Interaction, tipo: Choice[str]):
-    await interaction.response.defer(ephemeral=True)
+    try:
+        # Defer o mais rápido possível para sinalizar que vai responder depois
+        await interaction.response.defer(ephemeral=True)
+    except Exception as e:
+        # Se der erro no defer (muito raro), pode ignorar para não travar
+        print(f"Erro ao defer: {e}")
+
     guild = interaction.guild
 
-    estruturas = {
-        "gamer": {
-            "categorias": {
-                "📜 Texto": [
-                    "📢・anúncios",
-                    "💬・geral",
-                    "🤖・comandos",
-                    "📷・fotos",
-                    "💡・ideias-e-sugestoes",
-                    "📌・regras",
-                    "❓・dúvidas",
-                    "📃・boas-vindas",
-                    "🎯・torneios",
-                    "💻・tech-talk",
-                ],
-                "🔊 Voz": [
-                    "🎙️・Geral",
-                    "🎮・Jogando",
-                    "🎶・Música",
-                    "📚・Estudos",
-                    "🎬・Filmes",
-                    "🕹️・Streaming",
-                ],
-                "🔧 Staff": [
-                    "📋・moderacao",
-                    "🔧・comandos-staff",
-                    "📞・reuniões",
-                ],
-            },
-            "cargos": [
-                ("👑 Dono", discord.Permissions(administrator=True)),
-                ("🛠️ Staff", discord.Permissions(manage_messages=True, kick_members=True, ban_members=True)),
-                ("🎮 Membro", None),
-                ("📢 Anunciantes", discord.Permissions(manage_messages=True)),
-                ("🎓 Vips", None),
-                ("🤖 Bots", None),
-            ],
-        },
-        "estudos": {
-            "categorias": {
-                "📚 Estudo": [
-                    "📢・avisos",
-                    "📚・materiais",
-                    "💬・chat-estudos",
-                    "🧠・resumos",
-                    "📌・regras",
-                    "📃・boas-vindas",
-                    "📝・exercícios",
-                    "📅・cronograma",
-                    "🎓・dúvidas",
-                ],
-                "🔊 Voz": [
-                    "📚・Estudo em grupo 1",
-                    "📚・Estudo em grupo 2",
-                    "🎧・Concentração",
-                    "🗣️・Debates",
-                ],
-                "🔧 Staff": [
-                    "📋・coordenação",
-                    "🛠️・suporte",
-                    "📞・reuniões",
-                ],
-            },
-            "cargos": [
-                ("👑 Professor", discord.Permissions(administrator=True)),
-                ("📖 Monitor", discord.Permissions(manage_messages=True)),
-                ("🧠 Aluno", None),
-                ("🤖 Bots", None),
-            ],
-        },
-        "comunidade": {
-            "categorias": {
-                "👥 Comunidade": [
-                    "📢・notícias",
-                    "💬・bate-papo",
-                    "📷・galeria",
-                    "📌・regras",
-                    "📃・boas-vindas",
-                    "🎉・eventos",
-                    "🎨・arte",
-                    "📣・anúncios",
-                    "📅・agenda",
-                ],
-                "🔊 Voz": [
-                    "🎙️・Conversa Geral",
-                    "🎶・Música",
-                    "🗣️・Debates",
-                    "🎤・Karaokê",
-                ],
-                "🔧 Staff": [
-                    "👮・moderação",
-                    "🔧・comandos-staff",
-                    "📞・reuniões",
-                ],
-            },
-            "cargos": [
-                ("👑 Fundador", discord.Permissions(administrator=True)),
-                ("👮 Moderação", discord.Permissions(manage_messages=True, kick_members=True, ban_members=True)),
-                ("👥 Membro", None),
-                ("🤖 Bots", None),
-            ],
-        },
-        "filmes": {
-            "categorias": {
-                "🎬 Filmes": [
-                    "📢・lançamentos",
-                    "💬・discussões",
-                    "⭐・recomendações",
-                    "🎥・críticas",
-                    "📅・maratonas",
-                    "📌・regras",
-                    "📃・boas-vindas",
-                ],
-                "🔊 Voz": [
-                    "🎙️・Conversa Geral",
-                    "🎥・Sessão de Cinema",
-                    "🎶・Trilha Sonora",
-                ],
-                "🔧 Staff": [
-                    "🎬・organização",
-                    "🔧・suporte",
-                    "📞・reuniões",
-                ],
-            },
-            "cargos": [
-                ("👑 Admin", discord.Permissions(administrator=True)),
-                ("🎬 Organizador", discord.Permissions(manage_messages=True, manage_channels=True)),
-                ("🎥 Membro", None),
-                ("🤖 Bots", None),
-            ],
-        },
-    }
-
-    estrutura = estruturas.get(tipo.value)
+    estrutura = ESTRUTURAS.get(tipo.value)
     if not estrutura:
+        # Use followup pois já fez defer
         await interaction.followup.send("Tipo inválido!", ephemeral=True)
         return
 
-    # Cria categorias e canais
+    # Criar categorias e canais
     for categoria_nome, canais in estrutura["categorias"].items():
         categoria = get_category_by_name(guild, categoria_nome)
         if not categoria:
             categoria = await guild.create_category(categoria_nome)
 
-        for canal_nome in canais:
-            tipo_canal = "voice" if categoria_nome == "🔊 Voz" else "text"
-            await get_or_create_channel(guild, canal_nome, channel_type=tipo_canal, category=categoria)
+        for canal in canais:
+            if isinstance(canal, dict):
+                nome = canal.get("nome")
+                tipo_canal = canal.get("tipo", "text")
+            else:
+                nome = canal
+                tipo_canal = "voice" if categoria_nome == "🔊 Voz" else "text"
+            await get_or_create_channel(guild, nome, channel_type=tipo_canal, category=categoria)
 
-    # Cria cargos
+    # Criar cargos
     for cargo_nome, permissoes in estrutura["cargos"]:
         await get_or_create_role(guild, cargo_nome, permissoes)
 
     await interaction.followup.send(f"Servidor montado no estilo `{tipo.name}` ✅", ephemeral=True)
+
     log_channel = await get_or_create_log_channel(guild)
     await log_channel.send(f"{interaction.user} executou comando montar com tipo `{tipo.name}`.")
+
+
+
+
 
 
 # /limpar quantidade
@@ -243,6 +133,10 @@ async def cmd_limpar(interaction: discord.Interaction, quantidade: int):
 
     log_channel = await get_or_create_log_channel(interaction.guild)
     await log_channel.send(f"{interaction.user} limpou {deleted_count} mensagens no canal {interaction.channel.name}.")
+
+
+
+
 
 
 # /criarcargo
