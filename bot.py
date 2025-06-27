@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
+from discord.app_commands import Choice
 import os
 from dotenv import load_dotenv
 import asyncio
@@ -33,6 +34,9 @@ def get_voice_channel_by_name(guild, name):
 def get_role_by_name(guild, name):
     return discord.utils.get(guild.roles, name=name)
 
+
+
+# FUNÇÕES GET OR CREATE (SAO CHAMADAS QUANDO DA UM /MONTAR)
 async def get_or_create_channel(guild, name, channel_type='text', category=None):
     if channel_type == 'text':
         canal = get_text_channel_by_name(guild, name)
@@ -71,11 +75,27 @@ async def on_ready():
         print(f"🌐 Slash commands sincronizados: {len(synced)}")
     except Exception as e:
         print(f"Erro ao sincronizar comandos: {e}")
+        
+def get_category_by_name(guild, name):
+    for category in guild.categories:
+        if category.name.lower() == name.lower():
+            return category
+    return None
+
+async def get_or_create_category(guild, name):
+    categoria = get_category_by_name(guild, name)
+    if categoria:
+        return categoria
+    return await guild.create_category(name)        
+        
+        
 
     # Pode postar no log que o bot está online
     for guild in bot.guilds:
         log_channel = await get_or_create_log_channel(guild)
         await log_channel.send("🤖 Bot Online!")
+        
+        
 
 # Comando /ajuda
 @bot.tree.command(name="ajuda", description="Mostra os comandos do bot")
@@ -91,64 +111,97 @@ async def ajuda(interaction: discord.Interaction):
     embed.add_field(name="/removecargo @membro nome_cargo", value="Remove cargo de um membro (Gerenciar cargos)", inline=False)
     embed.add_field(name="/sugerir texto", value="Envia uma sugestão para o canal de ideias", inline=False)
     await interaction.response.send_message(embed=embed, ephemeral=True)
+    
+    
 
+
+
+
+#/MONTAR
 # /montar - cria estrutura básica do servidor
-@bot.tree.command(name="montar", description="Cria a estrutura básica do servidor")
+@bot.tree.command(name="montar", description="Cria a estrutura personalizada do servidor")
+@app_commands.describe(tipo="Escolha o tipo de estrutura para montar")
+@app_commands.choices(tipo=[
+    Choice(name="Gamer", value="gamer"),
+    Choice(name="Estudos", value="estudos"),
+    Choice(name="Comunidade", value="comunidade"),
+])
 @app_commands.checks.has_permissions(administrator=True)
-async def montar(interaction: discord.Interaction):
-    await interaction.response.defer(ephemeral=True)  # Defer para evitar timeout
+async def montar(interaction: discord.Interaction, tipo: Choice[str]):
+    await interaction.response.defer(ephemeral=True)
 
     guild = interaction.guild
-
-    categoria_texto = get_category_by_name(guild, "📜 Texto")
-    if not categoria_texto:
-        categoria_texto = await guild.create_category("📜 Texto")
-
-    categoria_voz = get_category_by_name(guild, "🔊 Voz")
-    if not categoria_voz:
-        categoria_voz = await guild.create_category("🔊 Voz")
-
-    categoria_staff = get_category_by_name(guild, "🔧 Staff")
-    if not categoria_staff:
-        categoria_staff = await guild.create_category("🔧 Staff")
-
-    canais_texto = [
-        "📢・anúncios",
-        "💬・geral",
-        "🤖・comandos",
-        "📷・fotos",
-        "💡・ideias-e-sugestoes",
-        "📌・regras",
-        "❓・dúvidas",
-        "📃・boas-vindas",
-    ]
-    for nome in canais_texto:
-        await get_or_create_channel(guild, nome, channel_type='text', category=categoria_texto)
-
-    canais_voz = [
-        "🎙️・Geral",
-        "🎮・Jogando",
-        "🎶・Música",
-        "📚・Estudos",
-        "🎬・Filmes",
-    ]
-    for nome in canais_voz:
-        await get_or_create_channel(guild, nome, channel_type='voice', category=categoria_voz)
-
-    cargos = [
-        ("👑 Dono", discord.Permissions(administrator=True)),
-        ("🛠️ Staff", discord.Permissions(manage_messages=True)),
-        ("🎮 Membro", None),
-        ("📢 Anunciantes", discord.Permissions(manage_messages=True)),
-        ("🎓 Vips", None),
-        ("🤖 Bots", None),
-    ]
-    for nome, permissoes in cargos:
-        await get_or_create_role(guild, nome, permissoes)
-
-    await interaction.followup.send("Servidor ON ✅", ephemeral=True)
     log_channel = await get_or_create_log_channel(guild)
-    await log_channel.send(f"{interaction.user} executou comando montar.")
+
+    # Apagar estrutura existente? Você pode decidir isso também.
+    # await limpar_estrutura_antiga(guild)
+
+    # Estruturas personalizadas
+    estruturas = {
+        "gamer": {
+            "categorias": {
+                "📜 Texto": ["📢・anúncios", "💬・chat-gamer", "🤖・comandos", "📷・clipes", "📌・regras", "📃・boas-vindas"],
+                "🔊 Voz": ["🎮・Sala Gamer 1", "🎮・Sala Gamer 2", "🎧・Música"],
+                "🔧 Staff": []
+            },
+            "cargos": [
+                ("👑 Dono", discord.Permissions(administrator=True)),
+                ("🛠️ Staff", discord.Permissions(manage_messages=True)),
+                ("🎮 Gamer", None),
+                ("🎧 DJ", None),
+                ("🤖 Bots", None),
+            ]
+        },
+        "estudos": {
+            "categorias": {
+                "📚 Estudo": ["📢・avisos", "📚・materiais", "💬・chat-estudos", "🧠・resumos", "📌・regras", "📃・boas-vindas"],
+                "🔊 Voz": ["📚・Estudo em grupo 1", "📚・Estudo em grupo 2", "🎧・Concentração"],
+                "🔧 Staff": []
+            },
+            "cargos": [
+                ("👑 Professor", discord.Permissions(administrator=True)),
+                ("📖 Monitor", discord.Permissions(manage_messages=True)),
+                ("🧠 Aluno", None),
+                ("🤖 Bots", None),
+            ]
+        },
+        "comunidade": {
+            "categorias": {
+                "👥 Comunidade": ["📢・notícias", "💬・bate-papo", "📷・galeria", "📌・regras", "📃・boas-vindas"],
+                "🔊 Voz": ["🎙️・Conversa Geral", "🎶・Música"],
+                "🔧 Staff": []
+            },
+            "cargos": [
+                ("👑 Fundador", discord.Permissions(administrator=True)),
+                ("👮 Moderação", discord.Permissions(manage_messages=True)),
+                ("👥 Membro", None),
+                ("🤖 Bots", None),
+            ]
+        }
+    }
+
+    estrutura = estruturas[tipo.value]
+
+    # Criar categorias e canais
+    for nome_categoria, canais in estrutura["categorias"].items():
+        categoria = await get_or_create_category(guild, nome_categoria)
+        for canal_nome in canais:
+            tipo_canal = 'text' if "・" in canal_nome and "🎮" not in canal_nome and "🎧" not in canal_nome and "📚" not in canal_nome else 'voice'
+            await get_or_create_channel(guild, canal_nome, channel_type=tipo_canal, category=categoria)
+
+    # Criar cargos
+    for nome_cargo, permissoes in estrutura["cargos"]:
+        await get_or_create_role(guild, nome_cargo, permissoes)
+
+    await interaction.followup.send(f"Servidor montado no estilo `{tipo.name}` ✅", ephemeral=True)
+    await log_channel.send(f"{interaction.user} montou o servidor com o template `{tipo.name}`")
+    
+    
+    
+    
+    
+    
+ # /limpar - Limpar as ultimas mensagens   
 @bot.tree.command(name="limpar", description="Apaga as últimas mensagens do canal")
 @app_commands.checks.has_permissions(manage_messages=True)
 @app_commands.describe(quantidade="Quantidade de mensagens para apagar (use 0 para apagar tudo)")
@@ -160,6 +213,8 @@ async def limpar(interaction: discord.Interaction, quantidade: int):
         return
     
     deleted_count = 0
+    
+    
 
     if quantidade == 0:
         # Apaga todas as mensagens do canal em lotes de 100
@@ -174,6 +229,8 @@ async def limpar(interaction: discord.Interaction, quantidade: int):
     else:
         deleted = await interaction.channel.purge(limit=quantidade)
         deleted_count = len(deleted)
+        
+        
 
     msg = await interaction.channel.send(f"{deleted_count} mensagens apagadas.")
     await asyncio.sleep(5)
@@ -183,6 +240,11 @@ async def limpar(interaction: discord.Interaction, quantidade: int):
 
     log_channel = await get_or_create_log_channel(interaction.guild)
     await log_channel.send(f"{interaction.user} limpou {deleted_count} mensagens no canal {interaction.channel.name}.")
+    
+    
+    
+    
+    
 
 # Cores nomeadas
 CORES_NOMEADAS = {
@@ -199,6 +261,9 @@ CORES_NOMEADAS = {
     "ciano": "00FFFF",
     "magenta": "FF00FF"
 }
+
+
+
 
 @bot.tree.command(name="criarcargo", description="Cria um cargo novo")
 @app_commands.checks.has_permissions(administrator=True)
@@ -231,6 +296,11 @@ async def criarcargo(interaction: discord.Interaction, nome: str, cor: str = Non
 
     log_channel = await get_or_create_log_channel(guild)
     await log_channel.send(f"{interaction.user} criou o cargo '{nome}' com a cor {color}.")
+    
+    
+    
+    
+    
 
 # /criarcanal nome:str tipo:str - cria canal texto ou voz
 @bot.tree.command(name="criarcanal", description="Cria um canal de texto ou voz")
@@ -258,6 +328,11 @@ async def criarcanal(interaction: discord.Interaction, nome: str, tipo: str):
     await interaction.response.send_message(f"Canal '{nome}' do tipo {tipo} criado!", ephemeral=True)
     log_channel = await get_or_create_log_channel(guild)
     await log_channel.send(f"{interaction.user} criou o canal '{nome}' do tipo {tipo}.")
+    
+    
+    
+    
+    
 
 # /addcargo membro:member nome_cargo:str - adiciona cargo
 @bot.tree.command(name="addcargo", description="Adiciona cargo para um membro")
@@ -275,6 +350,10 @@ async def addcargo(interaction: discord.Interaction, membro: discord.Member, nom
     await interaction.response.send_message(f"Cargo '{nome_cargo}' adicionado para {membro.mention}.", ephemeral=True)
     log_channel = await get_or_create_log_channel(interaction.guild)
     await log_channel.send(f"{interaction.user} adicionou o cargo '{nome_cargo}' para {membro}.")
+    
+    
+    
+    
 
 # /removecargo membro:member nome_cargo:str - remove cargo
 @bot.tree.command(name="removecargo", description="Remove cargo de um membro")
@@ -292,6 +371,10 @@ async def removecargo(interaction: discord.Interaction, membro: discord.Member, 
     await interaction.response.send_message(f"Cargo '{nome_cargo}' removido de {membro.mention}.", ephemeral=True)
     log_channel = await get_or_create_log_channel(interaction.guild)
     await log_channel.send(f"{interaction.user} removeu o cargo '{nome_cargo}' de {membro}.")
+    
+    
+    
+    
 
 # /resetar - reseta canais e cargos com confirmação via reação
 @bot.tree.command(name="resetar", description="Reseta o servidor mantendo canais escolhidos")
@@ -353,6 +436,10 @@ async def resetar(interaction: discord.Interaction):
 
     except asyncio.TimeoutError:
         await interaction.followup.send("⏱️ Tempo para resposta esgotado. Reset cancelado.", ephemeral=True)
+        
+        
+        
+        
 
 
 # Evento boas-vindas automático
