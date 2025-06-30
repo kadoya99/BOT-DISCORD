@@ -41,7 +41,9 @@ async def cmd_ajuda(interaction: discord.Interaction):
     embed.add_field(name="/addcargo @membro nome_cargo", value="Adiciona cargo para um membro (Gerenciar cargos)", inline=False)
     embed.add_field(name="/removecargo @membro nome_cargo", value="Remove cargo de um membro (Gerenciar cargos)", inline=False)
     embed.add_field(name="/sugerir texto", value="Envia uma sugestão para o canal de ideias", inline=False)
+    embed.add_field(name="/ping", value="ping do bot", inline=False)
     await interaction.response.send_message(embed=embed, ephemeral=True)
+
 
 #MONTAR 
 # /montar
